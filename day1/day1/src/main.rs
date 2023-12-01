@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 fn read_input(filename: &str) -> Vec<String> {
     std::fs::read_to_string(filename)
         .unwrap()
@@ -9,7 +7,7 @@ fn read_input(filename: &str) -> Vec<String> {
 }
 
 fn tok(pos: usize, line: &str, use_words: bool) -> (&str, i32, usize) {
-    let tokens: HashMap<&str, i32> = HashMap::from([
+    let tokens = vec![
         ("zero", 0),
         ("one", 1),
         ("two", 2),
@@ -20,7 +18,7 @@ fn tok(pos: usize, line: &str, use_words: bool) -> (&str, i32, usize) {
         ("seven", 7),
         ("eight", 8),
         ("nine", 9),
-    ]);
+    ];
 
     if line[pos..pos + 1].chars().all(|c| c.is_digit(10)) {
         return ("num", line[pos..pos + 1].parse::<i32>().unwrap(), 1);
