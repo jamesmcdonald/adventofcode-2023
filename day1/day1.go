@@ -4,34 +4,25 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
-func readInput(fn string) []int {
+func readLines(fn string) ([]string, error) {
 	f, err := os.Open(fn)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer f.Close()
 
-	var nums []int
+	var lines []string
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		line := scanner.Text()
-		var first int
-		var last int
-		var first_found bool = false
-		for _, r := range line {
-			if r >= '0' && r <= '9' {
-				if !first_found {
-					first = int(r-'0') * 10
-					first_found = true
-				}
-				last = int(r - '0')
-			}
-		}
-		nums = append(nums, first+last)
+		lines = append(lines, scanner.Text())
 	}
-	return nums
+	if scanner.Err() != nil {
+		return nil, scanner.Err()
+	}
+	return lines, nil
 }
 
 var tokens = map[string]int{
@@ -46,24 +37,27 @@ var tokens = map[string]int{
 	"nine":  9,
 }
 
-func tok(pos int, line string) (string, int, int) {
+func tok(pos int, line string, use_words bool) (string, int, int) {
 	if line[pos] >= '0' && line[pos] <= '9' {
 		return "num", int(line[pos] - '0'), 1
 	}
+	if !use_words {
+		return "unknown", 0, 1
+	}
 	for tok, val := range tokens {
-		if len(line)-pos >= len(tok) && line[pos:pos+len(tok)] == tok {
+		if strings.HasPrefix(line[pos:], tok) {
 			return "num", val, len(tok)
 		}
 	}
 	return "unknown", 0, 1
 }
 
-func parseLine(line string) (int, int) {
+func parseLine(line string, use_words bool) (int, int) {
 	var first int
 	var last int
 	var first_found bool = false
 	for i := 0; i < len(line); {
-		tokType, tokVal, tokLen := tok(i, line)
+		tokType, tokVal, tokLen := tok(i, line, use_words)
 		if tokType == "num" {
 			if !first_found {
 				first = tokVal * 10
@@ -74,28 +68,19 @@ func parseLine(line string) (int, int) {
 		i += tokLen
 	}
 	return first, last
-
 }
 
-func parseInput(fn string) []int {
-	f, err := os.Open(fn)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
+func parseLines(lines []string, use_words bool) []int {
 	var nums []int
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		first, last := parseLine(line)
+	for _, line := range lines {
+		first, last := parseLine(line, use_words)
 		nums = append(nums, first+last)
 	}
 	return nums
 }
 
-func solve(parser func(string) []int, fn string) {
-	nums := parser(fn)
+func solve(lines []string, use_words bool) {
+	nums := parseLines(lines, use_words)
 	total := 0
 	for _, num := range nums {
 		total += num
@@ -104,6 +89,10 @@ func solve(parser func(string) []int, fn string) {
 }
 
 func main() {
-	solve(readInput, os.Args[1])
-	solve(parseInput, os.Args[1])
+	lines, err := readLines(os.Args[1])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "readLines:", err)
+	}
+	solve(lines, false)
+	solve(lines, true)
 }
