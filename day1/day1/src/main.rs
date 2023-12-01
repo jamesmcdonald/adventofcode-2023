@@ -1,27 +1,14 @@
 use std::collections::HashMap;
 
-fn read_input(filename: &str) -> Vec<i32> {
-    let contents = std::fs::read_to_string(filename).unwrap();
-    let mut nums = Vec::new();
-    for line in contents.lines() {
-        let mut first: i32 = 0;
-        let mut last: i32 = 0;
-        let mut first_found = false;
-        for c in line.chars() {
-            if c.is_digit(10) {
-                if !first_found {
-                    first = (c as i32 - '0' as i32) * 10;
-                    first_found = true;
-                }
-                last = c as i32 - '0' as i32;
-            }
-        }
-        nums.push(first + last);
-    }
-    nums
+fn read_input(filename: &str) -> Vec<String> {
+    std::fs::read_to_string(filename)
+        .unwrap()
+        .lines()
+        .map(str::to_string)
+        .collect()
 }
 
-fn tok(pos: usize, line: &str) -> (&str, i32, usize) {
+fn tok(pos: usize, line: &str, use_words: bool) -> (&str, i32, usize) {
     let tokens: HashMap<&str, i32> = HashMap::from([
         ("zero", 0),
         ("one", 1),
@@ -38,6 +25,9 @@ fn tok(pos: usize, line: &str) -> (&str, i32, usize) {
     if line[pos..pos + 1].chars().all(|c| c.is_digit(10)) {
         return ("num", line[pos..pos + 1].parse::<i32>().unwrap(), 1);
     }
+    if !use_words {
+        return ("unknown", 0, 1);
+    }
     for (tok, val) in tokens.iter() {
         if line.len() - pos >= tok.len() && line[pos..pos + tok.len()] == **tok {
             return ("num", *val, tok.len());
@@ -46,13 +36,13 @@ fn tok(pos: usize, line: &str) -> (&str, i32, usize) {
     ("unknown", 0, 1)
 }
 
-fn parse_line(line: &str) -> (i32, i32) {
+fn parse_line(line: &str, use_words: bool) -> (i32, i32) {
     let mut first: i32 = 0;
     let mut last: i32 = 0;
     let mut first_found = false;
     let mut i = 0;
     while i < line.len() {
-        let (tok_type, tok_val, tok_len) = tok(i, line);
+        let (tok_type, tok_val, tok_len) = tok(i, line, use_words);
         if tok_type == "num" {
             if !first_found {
                 first = tok_val * 10;
@@ -65,18 +55,17 @@ fn parse_line(line: &str) -> (i32, i32) {
     (first, last)
 }
 
-fn parse_input(filename: &str) -> Vec<i32> {
-    let contents = std::fs::read_to_string(filename).unwrap();
+fn parse_lines(lines: &Vec<String>, use_words: bool) -> Vec<i32> {
     let mut nums = Vec::new();
-    for line in contents.lines() {
-        let (first, last) = parse_line(line);
+    for line in lines {
+        let (first, last) = parse_line(line, use_words);
         nums.push(first + last);
     }
     nums
 }
 
-fn solve(parser: fn(&str) -> Vec<i32>, filename: &str) {
-    let nums = parser(filename);
+fn solve(lines: &Vec<String>, use_words: bool) {
+    let nums = parse_lines(lines, use_words);
     let mut total = 0;
     for num in nums {
         total += num;
@@ -85,6 +74,7 @@ fn solve(parser: fn(&str) -> Vec<i32>, filename: &str) {
 }
 
 fn main() {
-    solve(read_input, std::env::args().nth(1).unwrap().as_str());
-    solve(parse_input, std::env::args().nth(1).unwrap().as_str());
+    let lines = read_input(std::env::args().nth(1).unwrap().as_str());
+    solve(&lines, false);
+    solve(&lines, true);
 }
